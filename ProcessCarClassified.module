@@ -628,12 +628,11 @@ class ProcessCarClassified extends Process {
 	 * 
 	 */
 	private function mainNav() {
-
 		//Create delegate template
-    	$template = new TemplateFile(__DIR__ . "/markup/navigation.inc");
-    	//assign the rendered view to content variable to show up on articles.php
-    	$template->set('mainPage', self::pageName);
-    	return $template->render();    	
+		$template = new TemplateFile(__DIR__ . "/markup/navigation.inc");
+		//assign the rendered view to content variable to show up on articles.php
+		$template->set('mainPage', self::pageName);
+		return $template->render();    	
 	}
 
 	/**
