@@ -1,0 +1,702 @@
+<?php
+
+/**
+ * Car Classified Process Module
+ *
+ *
+ * Copyright [2014] by [Gayan Virajith]
+ *
+ *
+ * ProcessWire 2.x 
+ * Copyright (C) 2012 by Ryan Cramer 
+ * Licensed under GNU/GPL v2, see LICENSE.TXT
+ * 
+ * http://processwire.com
+ *
+ */
+
+class ProcessCarClassified extends Process {
+
+	/**
+	 * Return information about this module (required)
+	 *
+	 */
+	public static function getModuleInfo() {
+
+		return array(
+
+			// Your module's title
+			'title' => 'Car Classified', 
+
+			// A 1 sentence description of what your module does
+			'summary' => 'Car classified process module to manage classifieds', 
+	
+			// Module version number: use 1 for 0.0.1 or 100 for 1.0.0, and so on
+			'version' => 1, 
+
+			// Name of person who created this module (change to your name)
+			'author' => 'Gayan Virajith', 
+
+			// URL to more info: change to your full modules.processwire.com URL (if available), or something else if you prefer
+			'href' => 'http://modules.processwire.com/', 
+
+			// name of permission required of users to execute this Process (optional)
+			'permission' => 'page-edit', 
+			); 
+	}
+
+	/**
+	 * The name that will be used for the page this module creates
+	 *
+	 * It should be unique and the same (or similar) to the module name, but all lowercase.
+	 * It should not be the same as any other ProcessWire admin page name.
+	 *
+	 */
+	const pageName = 'car-classified';
+
+	// Car conditions page
+	private $carCondtionParent;
+	// Car condition template name
+	private $carConditionTemplate;
+
+	// Fuel types page
+	private $fuelTypesParent;
+	// Fuel type template name
+	private $fuelTypeTemplate;
+
+	// Manufacturers page
+	private $brandParent;
+	// Manufacturer template name
+	private $brandTemplate;
+
+	// Vehicle Transmisson parent page
+	private $transmissonParent;
+	// Vehicle Transmisson template name
+	private $transmissonTemplate;
+
+	// Vehicle body style
+	private $bodyStyleParent;
+	// Vehicle bodu style template
+	private $bodyStyleTemplate;
+
+	/**
+	 * This is an optional initialization function called before any execute functions.
+	 *
+	 */
+	public function init() {
+
+		parent::init(); // required
+		
+		$this->carConditionParent 	= wire('pages')->findOne("template=car-conditions");
+		$this->carConditionTemplate = 'car-condition';
+
+		$this->fuelTypesParent 		= wire('pages')->findOne("template=fuel-types");
+		$this->fuelTypeTemplate 	= 'fuel-type';
+
+		$this->brandParent			= wire('pages')->findOne("template=brands");
+		$this->brandTemplate		= 'brand';
+
+		$this->transmissonParent	= wire('pages')->findOne("template=transmision-types");
+		$this->transmissonTemplate	= 'transmision-type';
+
+		$this->bodyStyleParent		= wire('pages')->findOne("template=body-styles");
+		$this->bodyStyleTemplate	= 'body-style';
+	}
+
+	/**
+	 * This function is executed when a page with your Process assigned is accessed. 
+ 	 *
+	 * This can be seen as your main or index function. You'll probably want to replace
+	 * everything in this function. 
+	 *
+	 */
+	public function ___execute() {
+
+		$this->initAction($this->title);
+
+		//CREATE A NEW FORM
+		$form = $this->createForm();
+
+		$w = new InputfieldWrapper();		
+					
+		$fs1 = $this->modules->get("InputfieldFieldset"); 
+		$fs1->label = $this->_('Dashboard');
+		$fs1->setAttribute('id', 'dashboard');
+				
+		$m = $this->modules->get('InputfieldMarkup');
+		$m->columnWidth = 50;
+		$m->label = $this->_('Quick view');
+		//$m->description = $this->_('At a glance');
+		$m->attr('value', '<div>Hello</div>');
+		$m->skipLabel = Inputfield::skipLabelHeader;//we don't want a label displayed here
+		$fs1->add($m);//add post stats inputfield to fieldset
+
+		$w->add($fs1); 
+
+
+		$form->add($w); 
+		$form->attr('value', $this->mainNav());
+
+			return $form->render();
+	}	
+
+	/**
+	 * Default page for the module
+	 * page URL + "/carConditions/"
+	 *
+	 */
+	public function ___executeCarConditions() {
+
+		$this->initAction($this->_('Manage car conditions'),
+			$this->_('Car conditions'));
+		
+		//CREATE A NEW FORM
+		$form = $this->createForm(array('action' => 'carConditions'));
+
+		//CREATE A NEW WRAPPER
+		$w = new InputfieldWrapper;
+
+		$addNewForm = $this->renderReferenceModelForm(
+				array(
+					'inputfieldFieldsetLabel' => $this->_('Add new car condition(s)'),			
+				)
+			);
+		
+		$w->add($addNewForm);
+
+		$form->attr('value', $this->mainNav());
+		
+		// Fetch all items 
+		$referenceItemInputfieldset = $this->listReferenceModel(
+			array(
+				'inputfieldFieldsetLabel'	=> 'car condition',
+				'templateName'				=> $this->carConditionTemplate,
+				)
+			);
+
+		$w->add($referenceItemInputfieldset);		
+
+		$form->add($w);
+
+		$post = $this->input->post; 
+		
+		//send input->post values to the Method save();
+		if($post->save_unpublished_btn || $post->publish_btn) 
+			$this->saveReferenceModels($form, 
+				array(
+					'redirectUrl' 	=> 'carConditions',
+					'modelName' 	=> 'car condition',
+					'parentPage' 	=> $this->carConditionParent,
+					'templateName'	=> $this->carConditionTemplate
+					)
+				);
+
+		return $form->render();
+	}
+
+	/**
+	 * Manage Fuel types action
+	 * page URL + "/fuelTypes/"
+	 *
+	 */
+	public function ___executeFuelTypes() {
+		
+		$this->initAction($this->_('Manage fuel types'));
+
+		//CREATE A NEW FORM
+		$form = $this->createForm(array('action' => 'fuelTypes'));
+
+		$w = new InputfieldWrapper();
+
+		$addNewForm = $this->renderReferenceModelForm(
+				array(
+					'inputfieldFieldsetLabel' => $this->_('Add new fuel type(s)'),			
+				)
+			);
+		
+		$w->add($addNewForm);
+		
+		$form->add($w); 
+
+		$form->attr('value', $this->mainNav());
+
+		// Fetch all items 
+		$referenceItemInputfieldset = $this->listReferenceModel(
+			array(
+				'inputfieldFieldsetLabel'	=> 'fuel type',
+				'templateName'				=> $this->fuelTypeTemplate,
+				)
+			);
+
+		$w->add($referenceItemInputfieldset);
+
+		$form->add($w);
+		
+		$post = $this->input->post; 
+		
+		// Send input->post values to the Method save();
+		if($post->save_unpublished_btn || $post->publish_btn) 
+			$this->saveReferenceModels($form, 
+				array(
+					'redirectUrl' 	=> 'fuelTypes',
+					'modelName' 	=> 'fuel type',
+					'parentPage' 	=> $this->fuelTypesParent,
+					'templateName'	=> $this->fuelTypeTemplate
+					)
+				);
+
+		return $form->render();
+	}
+
+	/**
+	 * Manage vehicle transmisson types
+	 * page URL + "/transmissionTypes"
+	 */
+	public function ___executeTransmissionTypes() {
+
+		$this->initAction($this->_('Manage vehicle transmisson'));
+		
+		//CREATE A NEW FORM
+		$form = $this->createForm(array('action' => 'transmissionTypes'));
+
+		$w = new InputfieldWrapper();
+
+		$addNewForm = $this->renderReferenceModelForm(
+				array(
+					'inputfieldFieldsetLabel' => $this->_('Add new vehicle transmisson(s)'),			
+				)
+			);
+		
+		$w->add($addNewForm);
+		
+		$form->add($w); 
+
+		$form->attr('value', $this->mainNav());
+
+		// Fetch all items 
+		$referenceItemInputfieldset = $this->listReferenceModel(
+			array(
+				'inputfieldFieldsetLabel'	=> 'vehicle transmisson',
+				'templateName'				=> $this->transmissonTemplate,
+				)
+			);
+
+		$w->add($referenceItemInputfieldset);
+
+		$form->add($w);
+
+		$post = $this->input->post; 		
+
+		//send input->post values to the Method save();
+		if($post->save_unpublished_btn || $post->publish_btn) 
+			$this->saveReferenceModels($form, 
+				array(
+					'redirectUrl' 	=> 'transmissionTypes',
+					'modelName' 	=> 'vehicle transmisson',
+					'parentPage' 	=> $this->transmissonParent,
+					'templateName'	=> $this->transmissonTemplate
+					)
+				);
+
+			return $form->render();
+	}
+
+	/**
+	 * Manage vehicle brand
+	 * page URL + "/brand"
+	 */
+	public function ___executeBrand() {
+		
+		$this->initAction($this->_('Manage vehicle brands'));
+		
+		//CREATE A NEW FORM
+		$form = $this->createForm(array('action' => 'brand'));
+
+		$w = new InputfieldWrapper();
+
+		$addNewForm = $this->renderReferenceModelForm(
+				array(
+					'inputfieldFieldsetLabel' => $this->_('Add new vehicle brands(s)'),			
+				)
+			);
+		
+		$w->add($addNewForm);
+		
+		$form->add($w); 
+
+		$form->attr('value', $this->mainNav());
+
+		// Fetch all items 
+		$referenceItemInputfieldset = $this->listReferenceModel(
+			array(
+				'inputfieldFieldsetLabel'	=> 'vehicle brand',
+				'templateName'				=> $this->brandTemplate,
+				)
+			);
+
+		$w->add($referenceItemInputfieldset);
+
+		$form->add($w);
+
+		$post = $this->input->post; 
+		
+		// Send input->post values to the Method save();
+		//send input->post values to the Method save();
+		if($post->save_unpublished_btn || $post->publish_btn) 
+			$this->saveReferenceModels($form, 
+				array(
+					'redirectUrl' 	=> 'brand',
+					'modelName' 	=> 'vehicle brand',
+					'parentPage' 	=> $this->brandParent,
+					'templateName'	=> $this->brandTemplate
+					)
+				);
+
+		return $form->render();
+	}	
+
+	/**
+	 * Manage body styles
+	 * page URL + "/bodyStyles"
+	 *
+	 */
+	public function ___executeBodyStyle(){
+				
+		$this->initAction($this->_('Manage body style'));
+		
+		//CREATE A NEW FORM
+		$form = $this->createForm(array('action' => 'bodyStyles'));
+
+		$w = new InputfieldWrapper();
+
+		$addNewForm = $this->renderReferenceModelForm(
+				array(
+					'inputfieldFieldsetLabel' => $this->_('Add new fuel type(s)'),			
+				)
+			);
+		
+		$w->add($addNewForm);		
+
+		$form->attr('value', $this->mainNav());
+
+		// Fetch all items 
+		$referenceItemInputfieldset = $this->listReferenceModel(
+			array(
+				'inputfieldFieldsetLabel'	=> 'body style',
+				'templateName'				=> $this->bodyStyleTemplate,
+				)
+			);
+
+		$w->add($referenceItemInputfieldset);
+
+		$form->add($w);	
+
+		$post = $this->input->post; 		
+
+		//send input->post values to the Method save();
+		if($post->publish_btn || $post->save_unpublished_btn) 
+			$this->saveReferenceModels($form, 
+				array(
+					'redirectUrl' 	=> 'bodyStyle',
+					'modelName' 	=> 'body style',
+					'parentPage' 	=> $this->bodyStyleParent,
+					'templateName'	=> $this->bodyStyleTemplate
+					)
+				);
+
+		return $form->render();
+	}			
+
+	/**
+	 * Generic list method for reference model such as
+ 	 *  - vehicle condition
+	 *	- vehcile fuel type
+	 *	- vehicle transmisson
+	 *	- vehivle brand
+	 *	- vehicle body style
+	 *
+	 * @return InputfieldFieldset 
+	 *
+	 */
+	private function listReferenceModel(array $options = array()) {
+
+		$defaults = array(
+			'headerRows' => array( 
+				$this->_('Title'),
+				$this->_('Published'),		
+			),
+		);
+		$options = array_merge($defaults, $options); 	
+
+
+		$fs = $this->modules->get("InputfieldFieldset"); 
+		$fs->label = sprintf(
+			__('List / Edit %s(s)'), $options['inputfieldFieldsetLabel']);	
+
+		$m = $this->modules->get('InputfieldMarkup');
+		
+		$t = $this->modules->get('MarkupAdminDataTable');
+		$t->setEncodeEntities(false);
+		if ($options['markupAdminDataTableClass'])
+			$t->setClass($options['markupAdminDataTableClass']);			
+
+		// Set header rows
+		$t->headerRow($options['headerRows']);
+
+		$template = $options['templateName'];
+		$referenceItems = wire('pages')->find("template={$template}, include=all, sort=sort, limit=10");
+
+		if ($referenceItems) {
+			foreach ($referenceItems as $referenceItem) {
+				// Check if tag is published or not
+				$referenceItem->is(Page::statusUnpublished) ? 
+					$status = "<span class='unpublished'>" 
+						. $this->_('No') . "</span>" : 
+					$status = $this->_("Yes");				
+				$t->row(array(					
+					"<a href='{$this->config->urls->admin}page/edit/?id={$referenceItem->id}' class='edit iframe'>$referenceItem->title</a>",
+					$status,//tag published or not							
+				));
+			}				
+
+			$currentUrl = wire('page')->url . wire('input')->urlSegmentsStr."/";
+			$pagination = $referenceItems->renderPager(array('baseUrl' => $currentUrl));
+			$m->attr('value', $pagination . $t->render() . $pagination);//wrap our table with pagination
+
+			$total = $referenceItems->getTotal();
+			$m->description = $total == 0 ? $this->_('No items found.') : '';
+
+			$fs->add($m);			
+		}
+
+		return $fs;
+	}
+
+	/**
+	 * Generic save method for saving referene models such as
+	 *  - vehicle condition
+	 *	- vehcile fuel type
+	 *	- vehicle transmisson
+	 *	- vehivle brand
+	 *	- vehicle body style
+	 */
+	private function saveReferenceModels($form, array $options = array()){
+		
+		$defaults = array(
+			'redirectUrl' 	=> '',
+			'modelName'		=> 'Model item'
+		);
+
+		$options = array_merge($defaults, $options); 		
+
+		$form->processInput($this->input->post); 
+		
+		//$addModelItems will be a string of text separated by a new line (\n).		
+		$addModelItems = $this->input->post->add_text;
+
+		if (!$addModelItems) {
+			
+			// Display error message if input field is empty			
+			$this->error($this->_("You need to add some " .	
+				$options['modelName'] . "(s)"));			
+
+			// Redirect to particular action provided via $option array
+			$this->session->redirect(wire('page')->url . $options['redirectUrl']);		
+		}
+
+		// $items Array will be populated by splitting up using \n (newline)
+		$modelItems = explode("\n", $addModelItems);
+
+		$count = 0; // $counter for counting up conditions
+		foreach ($modelItems as $modelItem) {
+			
+			// Save new page;
+			$p = new Page();
+
+			// If parent page exist save it as parent
+			if ($options['parentPage']) $p->parent = $options['parentPage'];				
+
+			if ($options['templateName']) {
+				$p->template = wire('templates')->get($options['templateName']);			
+			}
+
+			$p->title = $this->sanitizer->text($modelItem);
+			// Skip to next if no title provided
+			if (!$p->title) continue;
+			// Sanitize and convert to a URL 
+			if ($p->title) $p->name = $this->sanitizer->pageName($p->title);
+			//check if name already taken
+			if($p->parent->child("name={$p->name}, include=all")->id) {						
+				$failed [] = $p->title;	
+				continue;
+			}			
+
+			if ($this->input->post->save_unpublished_btn) $p->addStatus(Page::statusUnpublished);		
+
+			// Save page.
+			$p->save();
+
+			$count++;
+		}
+
+		// Create a string of "failed" model items to add error message
+		$failedItems = implode(', ', $failed); 
+
+		// Tell user how many categories were added
+		if($count > 0) 
+			$this->message(sprintf(_n("Added %d new %s", "Added %d new %s(s).", $count, $options['modelName']), $count, $options['modelName']));
+		
+		// Notifiy failed items to user 
+		if($failedTitles) $this->error($this->_("Some " . $options['modelName'] . "(s)" . " not added because names already in use. These are: {$failedTitles}."));
+		
+			$this->session->redirect(wire('page')->url . $options['redirectUrl']);
+	}	
+
+	/**
+	 * Initialize form and return with custom setting
+	 * @return InputfieldForm
+	 */
+	private function createForm($options = array()) {
+
+		$defaults = array(
+			'method' => 'post',
+			'action' => self::pageName
+		);
+		$options = array_merge($defaults, $options); 	
+
+		// Initialize new form instance
+		
+		$form = $this->modules->get('InputfieldForm'); 
+		$form->attr('id', self::pageName); 
+		$form->action = $options['action'];
+		$form->method = $options['method'];
+
+		return $form;
+	}
+
+	/**
+	 * Returns InputfieldFieldset having a reference model form 
+	 * for creating new reference items.
+	 *
+	 * @return InputfieldFieldset 
+	 */
+	private function renderReferenceModelForm($options = array()) {
+
+		$defaults = array(
+			'inputfieldFieldsetLabel' => $this->_('Add new reference model item'),			
+			'inputfieldMarkup' => $this->_('Add new'),			
+		);
+		$options = array_merge($defaults, $options); 	
+
+		// Initialize new inputfieldFieldset
+		$fs = $this->modules->get("InputfieldFieldset"); 
+		$fs->label = $this->_($options['inputfieldFieldsetLabel']);
+
+		$m = $this->modules->get('InputfieldMarkup');
+		//$m->columnWidth = 35;
+		$m->label = $options['inputfieldMarkup'];
+		$m->description = $this->_('One item per line.');
+		$m->collapsed = Inputfield::collapsedYes; 
+
+		$txa = $this->modules->get('InputfieldTextarea');
+		$txa->attr('id+name', 'add_text');
+		$txa->skipLabel = Inputfield::skipLabelHeader;//we don't want a label displayed here
+		
+		$m->add($txa);
+	
+		//submit button to save quick post [save unpublished!]
+		$s = $this->modules->get('InputfieldSubmit'); 
+		$s->attr('id+name', 'save_unpublished_btn'); 
+		$s->attr('value', $this->_('Save Unpublished'));
+
+		$m->add($s);
+
+		//submit button to save AND publish quick post
+		$s = $this->modules->get('InputfieldSubmit'); 
+		$s->attr('id+name', 'publish_btn'); 
+		$s->attr('value', $this->_('Publish'));
+		
+		$m->add($s);		
+
+		$fs->add($m);
+
+		return $fs;
+	}
+
+	/**
+	 * Render/Return main navigation items
+	 * 
+	 */
+	private function mainNav() {
+
+		//Create delegate template
+    	$template = new TemplateFile(__DIR__ . "/markup/navigation.inc");
+    	//assign the rendered view to content variable to show up on articles.php
+    	$template->set('mainPage', self::pageName);
+    	return $template->render();    	
+	}
+
+	/**
+	 * Initilize an action with process page headline & breadcrumb
+	 */
+	private function initAction($headline, $breadcrumbCaption = FALSE) {
+
+		// Set a new headline, replacing the one used by our page (optional)
+		Wire::setFuel('processHeadline', $headline); 
+		
+		// Add a breadcrumb that returns to our main page 
+		if ($breadcrumb) $this->breadcrumbs->add(new Breadcrumb('../', 'Car conditions')); 
+	}
+
+
+	/**
+	 * Called only when your module is installed
+	 *
+	 * This version creates a new page with this Process module assigned. 
+	 *
+	 */
+	public function ___install() {
+
+		// create the page our module will be assigned to
+		$page = new Page();
+		$page->template = 'admin';
+		$page->name = self::pageName; 
+
+		// installs to the admin "Setup" menu ... change as you see fit
+		// $page->parent = $this->pages->get($this->config->adminRootPageID)->child('name=setup');
+		$page->parent = $this->pages->get($this->config->adminRootPageID);
+		$page->process = $this; 
+
+		// we will make the page title the same as our module title
+		// but you can make it whatever you want
+		$info = self::getModuleInfo();
+		$page->title = $info['title'];
+
+		// save the page
+		$page->save();
+
+		// tell the user we created this page
+		$this->message("Created Page: {$page->path}"); 
+	}
+
+	/**
+	 * Called only when your module is uninstalled
+	 *
+	 * This should return the site to the same state it was in before the module was installed. 
+	 *
+	 */
+	public function ___uninstall() {
+
+		// find the page we installed, locating it by the process field (which has the module ID)
+		// it would probably be sufficient just to locate by name, but this is just to be extra sure.
+		$moduleID = $this->modules->getModuleID($this); 
+		$page = $this->pages->get("template=admin, process=$moduleID, name=" . self::pageName); 
+
+		if($page->id) {
+			// if we found the page, let the user know and delete it
+			$this->message("Deleting Page: {$page->path}"); 
+			$page->delete();
+		}
+	}
+	
+}
