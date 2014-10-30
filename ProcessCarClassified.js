@@ -15,4 +15,17 @@ $(document).ready(function() {
 	if (!$('table').hasClass('noDisable')) {
 			if ($.tablesorter != undefined) $.tablesorter.defaults.headers = {0:{sorter:false}};//works but requires two clicks to kick-in!
 	}
+
+
+	/**
+	 * Setup fancybox for page edits
+	 */
+	var h = $(window).height()-65;
+    var w = $(window).width() > 1150 ? 1150 : $(window).width()-100;
+	
+	$('.add-new-vehicle').fancybox({
+		type : 'iframe',
+		frameWidth : w,
+		frameHeight : h
+	});
 }); 

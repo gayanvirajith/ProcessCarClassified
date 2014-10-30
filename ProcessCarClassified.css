@@ -19,3 +19,8 @@ ul.menu li.current a {
 .Inputfields .InputfieldMarkup .InputfieldContent {
 	margin-top: 0;
 }
+
+#wrap_changeParent,
+#wrap_changeTemplate {
+	display: none; 
+}

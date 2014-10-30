@@ -86,7 +86,9 @@ class ProcessCarClassified extends Process {
 	public function init() {
 
 		parent::init(); // required
-		
+		        
+        $this->modules->get('JqueryFancybox');
+
 		$this->carConditionParent 	= wire('pages')->findOne("template=car-conditions");
 		$this->carConditionTemplate = 'car-condition';
 
@@ -127,18 +129,23 @@ class ProcessCarClassified extends Process {
 		$m->columnWidth = 50;
 		$m->label = $this->_('Quick view');
 		//$m->description = $this->_('At a glance');
-		$m->attr('value', '<div>Hello</div>');
+		
+		$addNewLink = $this->modules->get('InputfieldMarkup');
+		$addNewLink->attr('value', "<div><a class='add-new-vehicle batcher_edit batcher_small iframe' href='http://carclassified.localhost/processwire/page/add/?parent_id=1106&modal=1'>Add new vehicle</a></div>");		
+
+
 		$m->skipLabel = Inputfield::skipLabelHeader;//we don't want a label displayed here
 		$fs1->add($m);//add post stats inputfield to fieldset
 
 		$w->add($fs1); 
 
 
-		$form->add($w); 
+		$form->append($addNewLink); 
 		$form->attr('value', $this->mainNav());
 
 			return $form->render();
 	}	
+	
 
 	/**
 	 * Default page for the module
@@ -430,10 +437,10 @@ class ProcessCarClassified extends Process {
 
 
 		$fs = $this->modules->get("InputfieldFieldset"); 
-		$fs->label = sprintf(
-			__('List / Edit %s(s)'), $options['inputfieldFieldsetLabel']);	
 
 		$m = $this->modules->get('InputfieldMarkup');
+		$m->label = sprintf(
+			__('List / Edit %s(s)'), $options['inputfieldFieldsetLabel']);	
 		
 		$t = $this->modules->get('MarkupAdminDataTable');
 		$t->setEncodeEntities(false);
@@ -469,7 +476,7 @@ class ProcessCarClassified extends Process {
 			$fs->add($m);			
 		}
 
-		return $fs;
+		return $m;
 	}
 
 	/**
@@ -620,7 +627,7 @@ class ProcessCarClassified extends Process {
 
 		$fs->add($m);
 
-		return $fs;
+		return $m;
 	}
 
 	/**
